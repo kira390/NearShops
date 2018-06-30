@@ -1,11 +1,13 @@
 from flask import Flask
+from flask_restful import Api
+
+from shop_service.common import APP_PORT,APP_BIND
+from shop_service.resources import *
 
 app = Flask(__name__)
+api = Api(app)
 
-
-@app.route("/")
-def main():
-    return "Hello World, I'm the Shop service"
-
+api.add_resource(Shop,'/shops/<string:shop_id>')
+api.add_resource(Shops,'/shops/','/shop')
 if __name__ == '__main__':
-    app.run(port=80, host='0.0.0.0', debug=True)
+    app.run(port=APP_PORT, host=APP_BIND, debug=True)
