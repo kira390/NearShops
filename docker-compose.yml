@@ -1,18 +1,30 @@
 version: "3"
 services:
-  mongodb:
-    image: mongo:latest
-    container_name: mongodb
-    hostname: mongodb
-    environment:
-      - MONGO_DATA_DIR=/data/db
-      - MONGO_LOG_DIR=/dev/null
-    volumes:
-      - ./docker-resources/mongodb:/nearshops
-    ports:
-      - 27017:27017
-    command: bash /nearshops/bootstrap.sh
-    networks:
-      - nearshops_net
+
+    shopservice:
+      build: shop_service/.
+      image: nearshops/shop_service
+      container_name: shopservice
+      ports:
+        - 5000:80
+      networks:
+        - nearshops_net
+      depends_on:
+        - mongodb
+
+    mongodb:
+      image: mongo:latest
+      container_name: mongodb
+      hostname: mongodb
+      environment:
+        - MONGO_DATA_DIR=/data/db
+        - MONGO_LOG_DIR=/dev/null
+      volumes:
+        - ./docker-resources/mongodb:/nearshops
+      ports:
+        - 27017:27017
+      command: bash /nearshops/bootstrap.sh
+      networks:
+        - nearshops_net
 networks:
   nearshops_net:
