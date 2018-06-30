@@ -1,6 +1,18 @@
 version: "3"
 services:
 
+    apigateway:
+      build: api_gateway/.
+      image: nearshops/api_gateway
+      container_name: apigateway
+      ports:
+        - 5000:80
+      networks:
+        - nearshops_net
+      links:
+        - shopservice
+        - authservice
+
     authservice:
       build: authentication_service/.
       image: nearshops/auth_service
