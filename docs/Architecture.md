@@ -17,6 +17,6 @@ This is is the main service: Receives requests from clients, check their token i
 |---------|----------|-----------|
 |/shops/|GET|     |
 |/shops/|POST|     |
-|/shops/<ShopID>|GET|     |
-|/shops/<ShopID>|PUT|     |
-|/shops/<ShopID>|DELETE|     |
+|/shops/\<ShopID\>|GET|     |
+|/shops/\<ShopID\>|PUT|     |
+|/shops/\<ShopID\>|DELETE|     |
