@@ -1,6 +1,17 @@
 version: "3"
 services:
 
+    authservice:
+      build: authentication_service/.
+      image: nearshops/auth_service
+      container_name: authservice
+      ports:
+        - 5000:80
+        networks:
+          - nearshops_net
+          depends_on:
+            - mongodb
+
     shopservice:
       build: shop_service/.
       image: nearshops/shop_service
