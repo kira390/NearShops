@@ -8,12 +8,14 @@ from flask_restful import Resource, abort
 from shop_service.common import MONGO, SHOP_PARSER, LOCATION_PARSER
 from shop_service.common import is_authenticated, sort_shops_by_distance
 
+
 class Shops(Resource):
     """
     This Class represents the Shops resource.
     it handles operations on shops lists
     :urls /shops, /shops/
     :operations GET, POST
+        - GET accepts two arguments for longitude and latitude
     """
     def get(self):
         user = is_authenticated(request)
