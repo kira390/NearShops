@@ -16,7 +16,13 @@ Signed in users can:
 * Remove a shops from his liked shops list
 * Dislike shops (disliked shops won't appear in the nearby shops for 2 hours).
 
-For a deeper insight of the NearShop Architecture check [the Architecture doc](docs/Architecture.md)
+## Architecture
+Since for me this challenge is an other opportunity to learn i've designed the app as a distributed application to make it more challenging. and make the application scallable and fault telerant using service replication and automate the deployement process using Docker/Swarm/Kubernetes.
+
+It is composed of 3 REST-based microservices:
+* [Authentication service](shop_service/README.md)
+* [Shop service](authentication_service/README.md)
+* [API Gateway](api_gateway/README.md)
 
 ## Built With
 * [Python](https://www.python.org/)
