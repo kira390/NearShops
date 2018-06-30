@@ -7,6 +7,8 @@ from shop_service.resources import *
 app = Flask(__name__)
 api = Api(app)
 
+api.add_resource(ShopsDisliked,'/shops/disliked','/shops/disliked/')
+api.add_resource(ShopsLiked,'/shops/liked','/shops/liked/')
 api.add_resource(Shop,'/shops/<string:shop_id>')
 api.add_resource(Shops,'/shops/','/shop')
 if __name__ == '__main__':
