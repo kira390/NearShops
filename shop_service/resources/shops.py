@@ -18,7 +18,9 @@ class Shops(Resource):
         - GET accepts two arguments for longitude and latitude
     """
     def get(self):
+
         user = is_authenticated(request)
+
         args = LOCATION_PARSER.parse_args()
         shops = MONGO['shops'].find({
             "$or": [
@@ -28,13 +30,14 @@ class Shops(Resource):
             ]
         },{"dislikers":0, "likers":0})
         result = []
+        print("loool")
         for shop in shops:
             shop["_id"] = json.loads(json_util.dumps(shop["_id"]))["$oid"]
             result.append(shop)
         if args["latitude"] and args["latitude"]:
             location = (args["longitude"], args["latitude"])
-            shops = sort_shops_by_distance(result,location)
-        return shops
+            result = sort_shops_by_distance(result,location)
+        return result
 
     def post(self):
         is_authenticated(request,role='admin')

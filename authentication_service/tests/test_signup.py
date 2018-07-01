@@ -131,6 +131,14 @@ class SignInTest(unittest.TestCase):
         self.assertEqual(future().status_code, 400)
 
     def test_signup_valid_client_success(self):
+        USER_REQ = OpMsg({
+            "find": "users",
+            "filter": {"login": "kira390@gmail.com"},
+            "limit": 1,
+            "singleBatch": True,
+            "$db": "authservice",
+            "$readPreference": {"mode": "primaryPreferred"}},
+            namespace="authservice")
         CLIENT_REQ = OpMsg({
             "find": "clients",
             "filter": {"client_id": "midleware1", "client_secret": "1sfg135df1d32fsdf489d7q6sdq6s4d"},
@@ -151,10 +159,20 @@ class SignInTest(unittest.TestCase):
 
         request = self.server.receives(CLIENT_REQ)
         request.ok(cursor={'id': 0, 'firstBatch': [CLIENT]})
+        request = self.server.receives(USER_REQ)
+        request.ok(cursor={'id': 0, 'firstBatch': []})
         self.server.receives().ok({"_id":USER["_id"]})
         self.assertEqual(future().status_code, 201)
 
     def test_signup_create_existing_user(self):
+        USER_REQ = OpMsg({
+            "find": "users",
+            "filter": {"login": "kira390@gmail.com"},
+            "limit": 1,
+            "singleBatch": True,
+            "$db": "authservice",
+            "$readPreference": {"mode": "primaryPreferred"}},
+            namespace="authservice")
         CLIENT_REQ = OpMsg({
             "find": "clients",
             "filter": {"client_id": "midleware1", "client_secret": "1sfg135df1d32fsdf489d7q6sdq6s4d"},
@@ -175,8 +193,8 @@ class SignInTest(unittest.TestCase):
 
         request = self.server.receives(CLIENT_REQ)
         request.ok(cursor={'id': 0, 'firstBatch': [CLIENT]})
-        self.server.receives().command_err(11000,"failed")
-        self.assertEqual(future().status_code, 400)
+        request = self.server.receives(USER_REQ)
+        request.ok(cursor={'id': 0, 'firstBatch': [USER]})
 
     def test_signup_with_invalid_client(self):
         CLIENT_REQ = OpMsg({

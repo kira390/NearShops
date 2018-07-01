@@ -37,6 +37,8 @@ class SignUp(Auth):
             "password": password,
             "role": "regular"
         }
+        if self.user_exists(login):
+            abort(400, message='User Alredy exists')
         try:
             status = users.insert_one(user).inserted_id
         except DuplicateKeyError:
