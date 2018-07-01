@@ -44,18 +44,19 @@ class Shop(Resource):
     def put(self, shop_id):
         is_authenticated(request, role='admin')
         args=SHOP_PARSER.parse_args()
+        try:
+            shop_id = ObjectId(shop_id)
+        except errors.InvalidId:
+            abort(400, message="Invalid Shop Id")
         shop = {
-            "_id": ObjectId(args["_id"]),
+            "_id": shop_id,
             "name": args["name"],
             "address": args["address"],
             "longitude": args["longitude"],
             "latitude": args["latitude"]
         }
         shops = MONGO['shops']
-        try:
-            shop_counter = shops.count({"_id": ObjectId(shop_id)})
-        except errors.InvalidId:
-            abort(400, message="Invalid Shop Id")
+        shop_counter = shops.count({"_id": shop_id})
         if shop_counter == 0:
             abort(400, message="Invalid Shop Id")
         else:

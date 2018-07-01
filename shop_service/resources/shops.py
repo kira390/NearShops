@@ -40,23 +40,18 @@ class Shops(Resource):
         is_authenticated(request,role='admin')
         args = SHOP_PARSER.parse_args()
         shop = {
-            "_id": ObjectId(args["_id"]),
             "name": args["name"],
             "address": args["address"],
             "longitude": args["longitude"],
             "latitude": args["latitude"]
         }
         shops = MONGO['shops']
-        shop_id = args["_id"]
-        try:
-            shop_counter = shops.count({"_id": ObjectId(shop_id)})
-        except errors.InvalidId:
-            abort(400, message="Invalid Shop Id")
-        if shop_counter != 0:
+        if shops.find_one(shop):
             abort(400, message="this Shop already exist")
         else:
             status = shops.insert_one(shop).inserted_id
             if status:
                 abort(400, message="Update faild")
             else:
+                shop["_id"]=status
                 return shop, 201

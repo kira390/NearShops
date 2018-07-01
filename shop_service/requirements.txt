@@ -2,3 +2,6 @@ flask
 flask-restful
 pymongo
 geopy
+pyjwt
+cryptography
+Mockupdb

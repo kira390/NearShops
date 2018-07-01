@@ -24,8 +24,13 @@ It is composed of 3 REST-based microservices:
 * [Shop service](authentication_service/README.md)
 * [API Gateway](api_gateway/README.md)
 
-## Built With
+##Dependencies
 * [Python](https://www.python.org/)
 * [Flask](http://flask.pocoo.org/)
 * [Flask-Restful](https://flask-restful.readthedocs.io/en/latest/)
+* [PyMongo](https://api.mongodb.com/python/current/)
+* [MockupDB](http://mockupdb.readthedocs.io/)
+* [PyJWT](https://pypi.org/project/PyJWT/1.4.0/)
+* [geopy](https://geopy.readthedocs.io/en/stable/)
+* [cryptography](https://cryptography.io/en/latest/)
 * [Docker](https://www.docker.com/)
