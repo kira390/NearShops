@@ -4,7 +4,7 @@ from bson import json_util
 from flask import request
 from flask_restful import abort
 
-from authentication_service.common import Auth,generate_access_token, is_authenticated
+from common import Auth, generate_access_token, is_authenticated
 
 
 class SignIn(Auth):

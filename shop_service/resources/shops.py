@@ -1,15 +1,14 @@
 import json
 import time
 
-from bson import ObjectId, errors, json_util
+from bson import json_util
 from flask import request
-from flask_restful import Resource, abort
+from flask_restful import abort
 
-from shop_service.common import MONGO, SHOP_PARSER, LOCATION_PARSER
-from shop_service.common import is_authenticated, sort_shops_by_distance
+from common import is_authenticated, BaseShop
 
 
-class Shops(Resource):
+class Shops(BaseShop):
     """
     This Class represents the Shops resource.
     it handles operations on shops lists
@@ -17,12 +16,16 @@ class Shops(Resource):
     :operations GET, POST
         - GET accepts two arguments for longitude and latitude
     """
+    def __init__(self, **kwargs):
+        app = kwargs["app"]
+        BaseShop.__init__(self, app=app)
+
     def get(self):
 
-        user = is_authenticated(request)
+        user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
 
-        args = LOCATION_PARSER.parse_args()
-        shops = MONGO['shops'].find({
+        args = self.location_parser.parse_args()
+        shops = self.database['shops'].find({
             "$or": [
                 {"dislikers.login":{"$ne": user['login']}},
                 {"dislikers.timestamp":{"$lte": time.time()-7200}},
@@ -36,19 +39,19 @@ class Shops(Resource):
             result.append(shop)
         if args["latitude"] and args["latitude"]:
             location = (args["longitude"], args["latitude"])
-            result = sort_shops_by_distance(result,location)
+            result = self.sort_shops_by_distance(result,location)
         return result
 
     def post(self):
-        is_authenticated(request,role='admin')
-        args = SHOP_PARSER.parse_args()
+        is_authenticated(request, self.public_key, self.auth_host, self.auth_algo, role='admin')
+        args = self.shop_parser.parse_args()
         shop = {
             "name": args["name"],
             "address": args["address"],
             "longitude": args["longitude"],
             "latitude": args["latitude"]
         }
-        shops = MONGO['shops']
+        shops = self.database['shops']
         if shops.find_one(shop):
             abort(400, message="this Shop already exist")
         else:

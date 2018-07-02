@@ -3,6 +3,7 @@ This file contains:
     - All Global variables and their default values
     - Functions,Objects used by multiple resources
 """
+import os
 import time
 import re
 
@@ -70,7 +71,7 @@ def generate_access_token(user, pivate_key, auth_host, token_ttl, auth_algo):
 
 def is_authenticated(request, public_key, auth_host, auth_algo, role="regular"):
     """
-    This method check the validity of Token:
+    This function check the validity of Token:
     :param access_token:
     :param the expected role of the user:
     :return the user object or False if there is no token or the role is not matched:
@@ -88,3 +89,18 @@ def is_authenticated(request, public_key, auth_host, auth_algo, role="regular"):
             abort(401, message="you don't have the right privileges")
     else:
         abort(400, message='Invalid Access Token')
+
+def configure_envirement(app):
+    app.config['APP_BIND'] = "0.0.0.0"
+    app.config['APP_PORT'] = 80
+    app.config['MONGO_DBNAME'] = 'authservice'
+    app.config['MONGO_URI'] = 'mongodb://shopproxy:azerty@localhost:27017/'
+    app.config['PUBLIC_KEY'] = 'public.pem'
+    app.config['PRIVATE_KEY'] = 'private.pem'
+    app.config['AUTH_ALGO'] = 'RS256'
+    app.config['AUTH_HOST'] = 'localhost'
+    app.config['TOKEN_TTL'] = 20
+
+    for key in app.config.keys():
+        if key in os.environ:
+            app.config[key]=os.environ[key]

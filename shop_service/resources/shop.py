@@ -2,22 +2,26 @@ import json
 
 from bson import ObjectId, errors, json_util
 from flask import request
-from flask_restful import Resource, abort
+from flask_restful import abort
 
-from shop_service.common import MONGO, is_authenticated, SHOP_PARSER
+from common import BaseShop, is_authenticated
 
 
-class Shop(Resource):
+class Shop(BaseShop):
     """
     This Class represents the Shop resource.
     it handles operations on a specific shop given id given in arguments
     :urls /shops/<shop_id>
     :operations GET, PUT, DELETE
     """
+    def __init__(self, **kwargs):
+        app = kwargs["app"]
+        BaseShop.__init__(self, app)
+
     def get(self, shop_id):
-        is_authenticated(request)
+        is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
         try:
-            shop = MONGO['shops'].find_one({"_id": ObjectId(shop_id)},{"dislikers":0, "likers":0})
+            shop = self.database['shops'].find_one({"_id": ObjectId(shop_id)},{"dislikers":0, "likers":0})
         except errors.InvalidId:
             abort(400, message="Invalid Shop Id")
         if shop is None:
@@ -26,8 +30,8 @@ class Shop(Resource):
         return shop
 
     def delete(self, shop_id):
-        is_authenticated(request,role='admin')
-        shops = MONGO['shops']
+        is_authenticated(request, self.public_key, self.auth_host, self.auth_algo,role='admin')
+        shops = self.database['shops']
         try:
             shop_counter = shops.count({"_id": ObjectId(shop_id)})
         except errors.InvalidId:
@@ -42,8 +46,8 @@ class Shop(Resource):
                 abort(400, message="Delete faild")
 
     def put(self, shop_id):
-        is_authenticated(request, role='admin')
-        args=SHOP_PARSER.parse_args()
+        is_authenticated(request, self.public_key, self.auth_host, self.auth_algo, role='admin')
+        args=self.shop_parser.parse_args()
         try:
             shop_id = ObjectId(shop_id)
         except errors.InvalidId:
@@ -55,7 +59,7 @@ class Shop(Resource):
             "longitude": args["longitude"],
             "latitude": args["latitude"]
         }
-        shops = MONGO['shops']
+        shops = self.database['shops']
         shop_counter = shops.count({"_id": shop_id})
         if shop_counter == 0:
             abort(400, message="Invalid Shop Id")

@@ -3,56 +3,10 @@ This file contains:
     - All Global variables and their default values
     - Functions,Objects used by multiple resources
 """
+import os
+
 import jwt
-from flask_restful import reqparse, abort
-from geopy import distance
-from pymongo import MongoClient
-
-
-# Authentication related parameters
-AUTH_HOST = 'localhost'
-AUTH_PUB = 'public.pem'
-AUTH_ALGO = 'RS256'
-LIFE_SPAN = 20
-
-# Service host and port
-APP_BIND = 'localhost'
-APP_PORT = 5001
-
-# MongoDB parameters:
-MONGODB_URI = 'mongodb://shopproxy:azerty@localhost:27017/'
-MONGODB_DBNAME = 'shopservice'
-
-MONGO = MongoClient(MONGODB_URI)[MONGODB_DBNAME]
-
-# Parses arguments to check if there is any location to filter on.
-LOCATION_PARSER = reqparse.RequestParser()
-LOCATION_PARSER.add_argument('latitude', type=float)
-LOCATION_PARSER.add_argument('longitude', type=float)
-
-# Parses arguments to chack if there is a shop object available.
-SHOP_PARSER = reqparse.RequestParser()
-SHOP_PARSER.add_argument('_id', type=str)
-SHOP_PARSER.add_argument('name', type=str)
-SHOP_PARSER.add_argument('address', type=str)
-SHOP_PARSER.add_argument('longitude', type=float)
-SHOP_PARSER.add_argument('latitude', type=float)
-
-
-def sort_shops_by_distance(shops, location):
-    """
-    This Function sorts a list of shop by distance from a location
-    :param shops:
-    :param location:
-    :return Sorted Shop List:
-    """
-    result = []
-    for shop in shops:
-        shop_location = (shop["longitude"], shop["latitude"])
-        shop["distance"] = distance.vincenty(location, shop_location).km
-        result.append(shop)
-        result = sorted(result, key=lambda k: k['distance'])
-    return result
+from flask_restful import abort
 
 
 def validate_token(access_token, public_key, auth_server, algorithm):
@@ -76,9 +30,9 @@ def validate_token(access_token, public_key, auth_server, algorithm):
     return decoded_token
 
 
-def is_authenticated(request,role="regular"):
+def is_authenticated(request, public_key, auth_host, auth_algo, role="regular"):
     """
-    This Function check the validity of Token:
+    This function check the validity of Token:
     :param access_token:
     :param the expected role of the user:
     :return the user object or False if there is no token or the role is not matched:
@@ -87,7 +41,7 @@ def is_authenticated(request,role="regular"):
     if authorization is None or 'Bearer' not in authorization:
         abort(401, message='You are not authenticated')
 
-    auth_token = validate_token(authorization[7:], AUTH_PUB, AUTH_HOST, AUTH_ALGO)
+    auth_token = validate_token(authorization[7:], public_key, auth_host, auth_algo)
     if authorization[7:] and auth_token:
         if auth_token["user"]["role"] in [role, 'admin']:
             return auth_token["user"]
@@ -95,3 +49,18 @@ def is_authenticated(request,role="regular"):
             abort(401, message="you don't have the right privileges")
     else:
         abort(400, message='Invalid Access Token')
+
+
+def configure_envirement(app):
+    app.config['APP_BIND'] = "0.0.0.0"
+    app.config['APP_PORT'] = 80
+    app.config['MONGO_DBNAME'] = 'shopservice'
+    app.config['MONGO_URI'] = 'mongodb://shopproxy:azerty@localhost:27017/'
+    app.config['PUBLIC_KEY'] = 'public.pem'
+    app.config['AUTH_ALGO'] = 'RS256'
+    app.config['AUTH_HOST'] = 'localhost'
+    app.config['TOKEN_TTL'] = 20
+
+    for key in app.config.keys():
+        if key in os.environ:
+            app.config[key]=os.environ[key]

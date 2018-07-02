@@ -1,6 +1,6 @@
 import unittest
 
-from authentication_service.authservice import app
+from authservice import app
 
 
 class TestUtils(unittest.TestCase):

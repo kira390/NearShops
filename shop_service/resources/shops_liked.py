@@ -5,11 +5,10 @@ from bson import json_util, errors, ObjectId
 from flask import request
 from flask_restful import Resource, abort
 
-from shop_service.common import LOCATION_PARSER,SHOP_PARSER,MONGO
-from shop_service.common import is_authenticated, sort_shops_by_distance
+from common import is_authenticated, BaseShop
 
 
-class ShopsLiked(Resource):
+class ShopsLiked(BaseShop):
     """
     This Class represents the Liked Shops resource.
     it handles operations on liked shops lists
@@ -17,27 +16,31 @@ class ShopsLiked(Resource):
     :operations GET, POST, DELETE
         - GET accepts two arguments for longitude and latitude
     """
+    def __init__(self, **kwargs):
+        app = kwargs["app"]
+        BaseShop.__init__(self, app)
+
     def get(self):
-        user = is_authenticated(request)
-        args = LOCATION_PARSER.parse_args()
-        shops = MONGO['shops'].find({"likers":user["login"]},{"dislikers":0, "likers":0})
+        user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
+        args = self.location_parser.parse_args()
+        shops = self.database['shops'].find({"likers":user["login"]},{"dislikers":0, "likers":0})
         result = []
         for shop in shops:
             shop["_id"] = json.loads(json_util.dumps(shop["_id"]))["$oid"]
             result.append(shop)
         if args["latitude"] and args["latitude"]:
             location = (args["longitude"], args["latitude"])
-            result = sort_shops_by_distance(result,location)
+            result = self.sort_shops_by_distance(result,location)
         return result
 
     def post(self):
-        user = is_authenticated(request)
-        args = SHOP_PARSER.parse_args()
+        user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
+        args = self.shop_parser.parse_args()
         try:
             shop_id = ObjectId(args["_id"])
         except errors.InvalidId:
             abort(400, message="Invalid Shop Id")
-        shops = MONGO['shops']
+        shops = self.database['shops']
         opp = {
             "$addToSet": {"likers": user["login"]}
         }
@@ -59,10 +62,10 @@ class ShopsLiked(Resource):
         return {"id": shop_id}, 201
 
     def delete(self):
-        user = is_authenticated(request)
-        args = SHOP_PARSER.parse_args()
+        user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
+        args = self.shop_parser.parse_args()
         shop_id = args["_id"]
-        shops = MONGO['shops']
+        shops = self.database['shops']
         opp = {
             "$pull": {"likers": user["login"]}
         }

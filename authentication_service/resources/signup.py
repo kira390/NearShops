@@ -1,11 +1,11 @@
 import json
 
-from bson import ObjectId, errors, json_util
+from bson import ObjectId, json_util
 from flask import request
 from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
 
-from authentication_service.common import Auth, is_authenticated, isValidEmail
+from common import Auth, is_authenticated, isValidEmail
 
 
 class SignUp(Auth):

@@ -1,3 +1,4 @@
-from shop_service.common.utils import *
+from common.utils import is_authenticated, configure_envirement
+from common.base_shop import BaseShop
 
-__all__=["APP_PORT", "APP_BIND", "MONGO", "SHOP_PARSER", "LOCATION_PARSER", "is_authenticated", "sort_shops_by_distance"]
+__all__=["is_authenticated", "BaseShop", "configure_envirement"]

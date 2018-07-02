@@ -3,7 +3,7 @@ import unittest
 from mockupdb import go, MockupDB, OpMsg
 from mockupdb._bson import ObjectId as mockup_oid
 
-from authentication_service.authservice import app
+from authservice import app
 from authentication_service.common import generate_access_token
 
 
