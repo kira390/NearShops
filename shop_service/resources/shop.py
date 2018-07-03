@@ -20,52 +20,13 @@ class Shop(BaseShop):
 
     def get(self, shop_id):
         is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
-        try:
-            shop = self.database['shops'].find_one({"_id": ObjectId(shop_id)},{"dislikers":0, "likers":0})
-        except errors.InvalidId:
-            abort(400, message="Invalid Shop Id")
-        if shop is None:
-            abort(400, message="shop_id doesn't exist")
-        shop["_id"] = json.loads(json_util.dumps(shop["_id"]))["$oid"]
-        return shop
+        return self.find_shops(id=shop_id)
 
     def delete(self, shop_id):
         is_authenticated(request, self.public_key, self.auth_host, self.auth_algo,role='admin')
-        shops = self.database['shops']
-        try:
-            shop_counter = shops.count({"_id": ObjectId(shop_id)})
-        except errors.InvalidId:
-            abort(400, message="Invalid Shop Id")
-        if shop_counter == 0:
-            abort(400, message="Invalid Shop Id")
-        else:
-            shops.delete_one({"_id": ObjectId(shop_id)})
-            if shops.count({"_id": ObjectId(shop_id)}) == shop_counter-1:
-                return '',204
-            else:
-                abort(400, message="Delete faild")
+        return self.delete_shop(shop_id), 204
 
     def put(self, shop_id):
         is_authenticated(request, self.public_key, self.auth_host, self.auth_algo, role='admin')
         args=self.shop_parser.parse_args()
-        try:
-            shop_id = ObjectId(shop_id)
-        except errors.InvalidId:
-            abort(400, message="Invalid Shop Id")
-        shop = {
-            "_id": shop_id,
-            "name": args["name"],
-            "address": args["address"],
-            "longitude": args["longitude"],
-            "latitude": args["latitude"]
-        }
-        shops = self.database['shops']
-        shop_counter = shops.count({"_id": shop_id})
-        if shop_counter == 0:
-            abort(400, message="Invalid Shop Id")
-        else:
-            status = shops.update_one({"_id": ObjectId(shop_id)}, shop)
-            if status.matched_count==1 and status.modified_count==1:
-                return shop, 201
-            else:
-                abort(400, message="Update faild")
+        return self.update_shop(shop_id, args["name"], args["address"], args["longitude"], args["latitude"])

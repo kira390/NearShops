@@ -64,3 +64,5 @@ def configure_envirement(app):
     for key in app.config.keys():
         if key in os.environ:
             app.config[key]=os.environ[key]
+
+    app.config['TOKEN_TTL'] = float(app.config['TOKEN_TTL'])

@@ -2,7 +2,7 @@ import json
 import time
 
 from bson import json_util, errors, ObjectId
-from flask import request
+from flask import request, jsonify
 from flask_restful import Resource, abort
 
 from common import is_authenticated, BaseShop
@@ -23,58 +23,15 @@ class ShopsLiked(BaseShop):
     def get(self):
         user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
         args = self.location_parser.parse_args()
-        shops = self.database['shops'].find({"likers":user["login"]},{"dislikers":0, "likers":0})
-        result = []
-        for shop in shops:
-            shop["_id"] = json.loads(json_util.dumps(shop["_id"]))["$oid"]
-            result.append(shop)
-        if args["latitude"] and args["latitude"]:
-            location = (args["longitude"], args["latitude"])
-            result = self.sort_shops_by_distance(result,location)
-        return result
+        return self.find_shops(liked=True, user_login=user['login'], longitude=args['longitude'], latitude=args['latitude'])
 
     def post(self):
         user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
         args = self.shop_parser.parse_args()
-        try:
-            shop_id = ObjectId(args["_id"])
-        except errors.InvalidId:
-            abort(400, message="Invalid Shop Id")
-        shops = self.database['shops']
-        opp = {
-            "$addToSet": {"likers": user["login"]}
-        }
-        counter=shops.count({
-            "$and":[
-                {"_id": shop_id},
-                {"dislikers.login":{"$eq":user['login']}},
-                {"dislikers.timestamp": {"$gte": time.time() - 7200}}
-            ]
-        })
-        if counter > 0:
-            abort(400, message="user dislikes this shop")
-        status = shops.update_one({"_id": shop_id}, opp)
 
-        if status.matched_count == 0:
-            abort(400, message="shop_id doesn't exist")
-        elif status.modified_count == 0:
-            abort(400, message="Update faild")
-        return {"id": shop_id}, 201
+        return self.like_dislike_shop(user["login"],args["_id"]), 201
 
     def delete(self):
         user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
         args = self.shop_parser.parse_args()
-        shop_id = args["_id"]
-        shops = self.database['shops']
-        opp = {
-            "$pull": {"likers": user["login"]}
-        }
-        try:
-            status = shops.update_one({"_id": ObjectId(shop_id)}, opp)
-        except errors.InvalidId:
-            abort(400, message="Invalid Shop Id")
-        if status.matched_count == 0:
-            abort(400, message="shop_id doesn't exist")
-        elif status.modified_count == 0:
-            abort(400, message="unliking shop failed")
-        return '', 204
+        return self.unlik_undislike_shop(args["_id"],user["login"]), 204
