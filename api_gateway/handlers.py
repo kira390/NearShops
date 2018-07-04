@@ -4,6 +4,8 @@ from json import JSONDecodeError
 
 import requests
 from flask import make_response, jsonify
+from flask_restful import abort
+
 
 def configure_envirement(app):
     app.config['APP_BIND'] = "0.0.0.0"
@@ -16,26 +18,27 @@ def configure_envirement(app):
 
 def redirection_handler(url, request):
     url = url+request.full_path
-    if request.method == 'GET':
-        resp = requests.get(url,json=request.json, headers=request.headers)
-        return make_response(xjson(resp), resp.status_code)
-    elif request.method == 'POST':
-        resp = requests.post(url, json=request.json, headers=request.headers)
-        return make_response(xjson(resp), resp.status_code)
-    elif request.method == 'PUT':
-        resp = requests.put(url, json=request.json, headers=request.headers)
-        return make_response(xjson(resp), resp.status_code)
-    elif request.method == 'DELETE':
-        resp = requests.delete(url, json=request.json, headers=request.headers)
-        return make_response(xjson(resp), resp.status_code)
-    return make_response(jsonify(
-        {
-            "message": "this Resource is not available."
-        }
-    ), 404)
+    try:
+        if request.method == 'GET':
+            resp = requests.get(url,json=request.json, headers=request.headers)
+            return make_response(xjson(resp), resp.status_code)
+        elif request.method == 'POST':
+            resp = requests.post(url, json=request.json, headers=request.headers)
+            return make_response(xjson(resp), resp.status_code)
+        elif request.method == 'PUT':
+            resp = requests.put(url, json=request.json, headers=request.headers)
+            return make_response(xjson(resp), resp.status_code)
+        elif request.method == 'DELETE':
+            resp = requests.delete(url, json=request.json, headers=request.headers)
+            return make_response(xjson(resp), resp.status_code)
+    except requests.ConnectionError:
+        pass
+    return abort(404, message="this Resource is not available.")
 
 def xjson(response):
     try:
         return jsonify(response.json())
     except JSONDecodeError:
+        if str(response.status_code).startswith("5"):
+            return abort(404, message="this Resource is not available.")
         return response.text

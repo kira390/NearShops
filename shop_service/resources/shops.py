@@ -21,11 +21,11 @@ class Shops(BaseShop):
         BaseShop.__init__(self, app=app)
 
     def get(self):
-        is_authenticated(request, self.public_key, self.auth_host, self.auth_algo, role='admin')
+        user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo, role='admin')
         args = self.location_parser.parse_args()
-        return self.find_shops(longitude=args["longitude"],latitude=args["latitude"])
+        return self.find_shops(user_login=user["login"], longitude=args["longitude"],latitude=args["latitude"])
 
     def post(self):
         is_authenticated(request, self.public_key, self.auth_host, self.auth_algo, role='admin')
         args = self.shop_parser.parse_args()
-        return self.add_shop(args["name"], args["address"], args["longitude"], args["latitude"]), 201
+        return self.add_shop(name=args["name"], address=args["address"], longitude=args["longitude"], latitude=args["latitude"]), 201

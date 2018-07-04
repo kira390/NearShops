@@ -1,4 +1,5 @@
 from flask import Flask, request
+from flask_restful import abort
 from handlers import *
 
 
@@ -11,11 +12,7 @@ configure_envirement(app)
 
 @app.errorhandler(404)
 def error_handler(code):
-    return make_response(jsonify(
-        {
-            "message": "this Resource is not available."
-        }
-    ), 404)
+    abort(404, message="this Resource is not available.")
 
 
 @app.route("/<path:code>",methods=["GET","POST","PUT","DELETE"])

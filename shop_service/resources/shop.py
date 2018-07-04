@@ -20,13 +20,15 @@ class Shop(BaseShop):
 
     def get(self, shop_id):
         is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
-        return self.find_shops(id=shop_id)
-
-    def delete(self, shop_id):
-        is_authenticated(request, self.public_key, self.auth_host, self.auth_algo,role='admin')
-        return self.delete_shop(shop_id), 204
+        return self.find_shops(shop_id=shop_id)
 
     def put(self, shop_id):
         is_authenticated(request, self.public_key, self.auth_host, self.auth_algo, role='admin')
         args=self.shop_parser.parse_args()
-        return self.update_shop(shop_id, args["name"], args["address"], args["longitude"], args["latitude"])
+        if not (args["name"] and args["address"] and args["longitude"] and args["latitude"]):
+            abort(400,message='missing arguments')
+        return self.update_shop(shop_id, args["name"], args["address"], args["longitude"], args["latitude"]), 201
+
+    def delete(self, shop_id):
+        is_authenticated(request, self.public_key, self.auth_host, self.auth_algo,role='admin')
+        return self.delete_shop(shop_id), 204

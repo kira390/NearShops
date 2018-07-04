@@ -28,10 +28,13 @@ class ShopsLiked(BaseShop):
     def post(self):
         user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
         args = self.shop_parser.parse_args()
-
-        return self.like_dislike_shop(user["login"],args["_id"]), 201
+        if not args["_id"]:
+            abort(400, message='missing arguments')
+        return self.like_dislike_shop(user_login=user["login"],shop_id=args["_id"]), 201
 
     def delete(self):
         user = is_authenticated(request, self.public_key, self.auth_host, self.auth_algo)
         args = self.shop_parser.parse_args()
-        return self.unlik_undislike_shop(args["_id"],user["login"]), 204
+        if not args["_id"]:
+            abort(400, message='missing arguments')
+        return self.unlik_undislike_shop(shop_id=args["_id"],user_login=user["login"]), 204

@@ -1,5 +1,6 @@
+from datetime import datetime
 import json
-import time
+
 
 from bson import ObjectId, json_util, errors
 from flask_restful import Resource, reqparse, abort
@@ -28,37 +29,55 @@ class BaseShop(Resource):
         self.shop_parser.add_argument('longitude', type=float)
         self.shop_parser.add_argument('latitude', type=float)
 
-    def find_shops(self, id=None, liked=False, disliked=False, user_login=None, longitude=None, latitude=None):
+    def find_unliked_undisliked_shops(self, user_login):
+        if user_login is None:
+            raise ValueError("can't find user_id argument")
         shops = self.database["shops"]
-        if id is not None:
-            shop = shops.find_one({"_id": ObjectId(id)},{"dislikers":0, "likers":0})
-            if shop:
-                shop["_id"] = json.loads(json_util.dumps(shop["_id"]))["$oid"]
-                return shop
-            else:
+        tmp = []
+        for disliker in self.find_disliked_shops(user_login):
+            tmp.append(disliker["_id"])
+        shop_list = []
+        for shop in shops.find({"likers": {"$ne": user_login}}, {"likers": 0}):
+            if shop["_id"] not in tmp:
+                shop_list.append(shop)
+        return shop_list
+
+    def find_liked_shops(self, user_login):
+        shops = self.database["shops"]
+        if user_login is None:
+            raise ValueError("can't find user_id argument")
+        return shops.find({"likers": user_login}, {"likers": 0})
+
+    def find_disliked_shops(self, user_login):
+        if user_login is None:
+            raise ValueError("can't find user_id argument")
+        shops = self.database["shops"]
+        dislikers = self.database["dislikers"]
+        tmp = []
+        for disliker in dislikers.find({"login": user_login}):
+            print(json_util.dumps(disliker))
+            tmp.append(disliker["shop_id"])
+        return shops.find({"_id":{"$in": tmp}}, {"likers": 0})
+
+    def find_shops(self, shop_id=None, liked=False, disliked=False, user_login=None, longitude=None, latitude=None):
+        shops = self.database["shops"]
+        if shop_id is not None:
+            try:
+                shop_id = ObjectId(shop_id)
+            except errors.InvalidId:
+                abort(400, message="Invalid Shop Id")
+            shop = shops.find_one({"_id": ObjectId(shop_id)},{"likers":0})
+            if not shop:
                 abort(400, message="this Shop doesn't exist")
+            shop["_id"] = json.loads(json_util.dumps(shop["_id"]))["$oid"]
+            return shop
         if liked is True:
-            if user_login is None: raise ValueError("can't find user_id argument")
-            req = {"likers":user_login}
+            shop_list = self.find_liked_shops(user_login)
         elif disliked is True:
-            if user_login is None: raise ValueError("can't find user_id argument")
-            req = {
-                "$and":[
-                    {"dislikers.login": {"$eq": user_login}},
-                    {"dislikers.timestamp": {"$gte": time.time() - 7200}}
-                ]
-            }
+            shop_list = self.find_disliked_shops(user_login)
         else:
-            req = {
-                "$or": [
-                    {"dislikers.login": {"$ne": user_login}},
-                    {"dislikers.timestamp": {"$lte": time.time() - 7200}},
-                    {"likers": {"$ne": user_login}},
-                    {"likers": None,"disliker":None}
-                ]
-            }
-        shop_list = shops.database['shops'].find(req, {"dislikers": 0, "likers": 0})
-        result=[]
+            shop_list = self.find_unliked_undisliked_shops(user_login)
+        result = []
         for shop in shop_list:
             shop["_id"] = json.loads(json_util.dumps(shop["_id"]))["$oid"]
             result.append(shop)
@@ -95,7 +114,7 @@ class BaseShop(Resource):
                 abort(400, message="this Shop already exist")
             else:
                 abort(400, message="An other shop exist in the same location")
-        shops.insert_one(shop_pattern).inserted_id
+        shops.insert_one(shop_pattern)
         shop = shops.find_one(shop_pattern)
         if not shop:
             abort(400, message="Failed to add the shop")
@@ -119,26 +138,30 @@ class BaseShop(Resource):
         if not shop_counter:
             abort(400, message="This shop doesn't exist")
         else:
-            status = shops.update_one({"_id": shop_id}, shop)
-            if status.matched_count==1 and status.modified_count==1:
-                return shop, 201
+            status = shops.replace_one({"_id": shop_id}, shop)
+            if status.matched_count==1 and status.matched_count==1:
+                shop["_id"] = json.loads(json_util.dumps(shop["_id"]))["$oid"]
+                return shop
+            elif status.modified_count==0:
+                abort(200, message="Nothing to change")
             else:
-                abort(400, message="Update faild")
+                abort(400, message="Update failed")
 
     def delete_shop(self, shop_id):
         shops = self.database['shops']
         try:
-            shop_counter = shops.count({"_id": ObjectId(shop_id)})
+            shop = shops.find_one({"_id": ObjectId(shop_id)})
         except errors.InvalidId:
             abort(400, message="Invalid Shop Id")
-        if shop_counter == 0:
-            abort(400, message="Invalid Shop Id")
+        if not shop:
+            abort(400, message="Shop not found")
         else:
-            shops.delete_one({"_id": ObjectId(shop_id)})
-            if shops.count({"_id": ObjectId(shop_id)}) == shop_counter - 1:
+            status = shops.delete_one({"_id": ObjectId(shop_id)}).raw_result
+            print(str(status))
+            if not shops.find_one({"_id": ObjectId(shop_id)}):
                 return ''
             else:
-                abort(400, message="Delete faild")
+                abort(400, message="Delete failed")
 
     def like_dislike_shop(self,user_login, shop_id, dislike=False):
         try:
@@ -146,48 +169,36 @@ class BaseShop(Resource):
         except errors.InvalidId:
             abort(400, message="Invalid Shop Id")
         shops = self.database['shops']
-
-        user_like = shops.find_one({
-            "$and": [
-                {"_id": shop_id},
-                {"likers": user_login},
-            ]
-        })
-        if user_like:
+        liker = shops.find_one({"$and":[{"_id": shop_id},{"likers": user_login}]})
+        disliker = self.database.dislikers.find_one({"$and":[{"shop_id": shop_id},{"user_login":user_login}]})
+        if liker:
             abort(400, message="user already likes this shop")
-        user_dislike = shops.find_one({
-            "$and": [
-                {"_id": shop_id},
-                {"dislikers.login": {"$eq": user_login}},
-                {"dislikers.timestamp": {"$gte": time.time() - 7200}},
-            ]
-        })
-        if user_dislike :
+        elif disliker:
             abort(400, message="user already dislikes this shop")
         if dislike:
-            opp = {"$addToSet": {"dislikers": {"login": user_login, "timestamp": time.time()}}}
+            opp = {"shop_id": shop_id, "login": user_login, "timestamp": datetime.now() }
+            status = self.database["dislikers"].insert_one(opp).inserted_id
+            if not status:
+                abort(400, message="dislike operation failed")
         else:
             opp = {"$addToSet": {"likers": user_login}}
-
-        status = shops.update_one({"_id": shop_id}, opp).modified_count
-        if status != 1:
-            return abort(400, message="like or dislike operation failed")
+            status = shops.update_one({"_id": shop_id}, opp).modified_count
+            if status != 1:
+                abort(400, message="like operation failed")
 
         return {"id":json.loads(json_util.dumps(shop_id))["$oid"]}
 
     def unlik_undislike_shop(self, shop_id, user_login, undislike=False):
         shops = self.database['shops']
-        if undislike:
-            opp = {"$pull": {"dislikers": {"login": user_login}}}
-        else:
-            opp = {"$pull": {"likers": user_login}}
         try:
-            status = shops.update_one({"_id": ObjectId(shop_id)}, opp)
+            shop_id = ObjectId(shop_id)
         except errors.InvalidId:
             abort(400, message="Invalid Shop Id")
-        if status.matched_count == 0:
-            abort(400, message="This Shop doesn't exist")
-        elif status.modified_count == 0:
+        if undislike:
+            status = self.database["dislikers"].delete_one({"shop_id": shop_id}).deleted_count
+        else:
+            status = shops.update_one({"_id": shop_id}, {"$pull": {"likers": user_login}}).modified_count
+        if status == 0:
             abort(400, message="Unliking/Undisliking shop failed")
         return ''
 

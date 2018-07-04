@@ -6,7 +6,17 @@ db.createUser(
         roles: [ "root" ]
     }
 )
+
 db = db.getSiblingDB('shopservice')
+db.dislikers.insert(
+    {
+        shop_id: ObjectId("5b3c30005e5aad3626b1a456"),
+        login: "kira390@gmail.com",
+        timestamp: Date()
+    }
+)
+db.dislikers.createIndex( { "timestamp": 1 }, { expireAfterSeconds: 62 } )
+
 db.shops.insert(
     {
         name: "MOTOBOX",
@@ -14,7 +24,6 @@ db.shops.insert(
         longitude: 33.562979,
         latitude: -7.648566,
         likers: ["kira390@gmail.com","malij14@outlook.fr"],
-        dislikers: [{login:"trop1@hotmail.jp", timestamp:"1530317635.3212626"}]
     }
 )
 db.shops.insert(
@@ -24,7 +33,6 @@ db.shops.insert(
         longitude: 33.564474,
         latitude: -7.627349,
         likers: ["trop1@hotmail.jp","malij14@outlook.fr"],
-        dislikers: [{login:"kira390@gmail.com", timestamp:"1530317635.3212626"}]
     }
 )
 db.shops.insert(
@@ -38,6 +46,7 @@ db.shops.insert(
 )
 
 db = db.getSiblingDB('authservice')
+
 db.users.insert(
     {
         login: "kira390@gmail.com",

@@ -21,7 +21,7 @@ def validate_token(access_token, public_key, auth_server, algorithm):
     with open(public_key,'r') as file:
         public_key=file.read()
     try:
-        decoded_token = jwt.decode(access_token.encode(), public_key, issuer=auth_server,algorithm=algorithm)
+        decoded_token = jwt.decode(access_token.encode(), public_key, issuer=auth_server, algorithms=algorithm)
     except (jwt.exceptions.InvalidTokenError,
             jwt.exceptions.InvalidSignatureError,
             jwt.exceptions.InvalidIssuerError,
