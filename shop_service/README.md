@@ -19,9 +19,9 @@ An Authentication is required for all those operations a Token must be added to 
 Here is a sample of how a shop document looks like:
 ```json
 {
-    "_id": "5b37a3d2c24feb54f92358f3",
-    "login": "user1",
-    "password": "bestPassword",
-    "role": "regular"
+    name: "MOTOBOX",
+    address: "104 Boulevard Omar Al Khiam, Casablanca 20850",
+    longitude: 33.562979,
+    latitude: -7.648566,
 }
 ```
