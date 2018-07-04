@@ -61,6 +61,8 @@ the gateway is very simple it's mainly just two functions. tests are more like i
 the classes but also the wiring, i mocked mongodb requests using mockupdb that i discovered last night we spen a long night together
 and unittest nothing realy fancy.
 
+EDIT: Unit Tests are also available for the shops service now, i've done some integration test using postman i'll try to push some too.
+
 ## Deployement
 PS: THIS APP IS NOT MEANT FOR PRODUCTION 
 
